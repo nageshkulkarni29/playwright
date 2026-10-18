@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Projects Dashboard</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5f7; --surface:#ffffff; --subsurface:#f7f9fb; --text:#1c2733; --muted:#5d6b7a; --line:#d9e0e6;
+  --accent:#1f6f8b; --accent-text:#ffffff;
+  --ok:#1d7a46; --okbg:#e0f3e8; --warn:#9a6200; --warnbg:#fbefd5; --bad:#a63232; --badbg:#f9e0e0;
+  --idle:#4f5d6b; --idlebg:#e8ecf0;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12181e; --surface:#1b242d; --subsurface:#16202a; --text:#e6ecf1; --muted:#97a6b4; --line:#2e3b47;
+    --accent:#5bb5d3; --accent-text:#0d1a21;
+    --ok:#6fd49a; --okbg:#173a28; --warn:#f0c067; --warnbg:#3d2f10; --bad:#f09a9a; --badbg:#431d1d;
+    --idle:#b3c0cc; --idlebg:#26323d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12181e; --surface:#1b242d; --subsurface:#16202a; --text:#e6ecf1; --muted:#97a6b4; --line:#2e3b47;
+  --accent:#5bb5d3; --accent-text:#0d1a21;
+  --ok:#6fd49a; --okbg:#173a28; --warn:#f0c067; --warnbg:#3d2f10; --bad:#f09a9a; --badbg:#431d1d;
+  --idle:#b3c0cc; --idlebg:#26323d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px clamp(16px,4vw,40px) 0}
+h1{margin:0 0 14px;font-size:1.4rem;font-weight:650}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:0}
+.tab{appearance:none;border:1px solid var(--line);border-bottom:none;background:var(--surface);color:var(--muted);
+  padding:10px 20px;border-radius:8px 8px 0 0;font:inherit;font-weight:600;cursor:pointer;margin-bottom:-1px}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.tab:focus-visible,.twisty:focus-visible,.link:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+main{padding:24px clamp(16px,4vw,40px) 40px;max-width:1000px}
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 18px;min-width:120px}
+.stat b{display:block;font-size:1.5rem}
+.stat span{color:var(--muted);font-size:.9rem}
+.proj-desc{color:var(--muted);margin:0 0 16px}
+.toolbar{display:flex;justify-content:flex-end;gap:16px;margin-bottom:8px}
+.link{appearance:none;border:none;background:none;color:var(--accent);font:inherit;font-size:.9rem;font-weight:600;cursor:pointer;padding:2px 4px}
+.table{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:.9rem}
+tr:last-child td{border-bottom:none}
+.mod td{font-weight:550}
+.name{display:flex;align-items:center;gap:8px}
+.twisty{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);width:26px;height:26px;border-radius:6px;
+  cursor:pointer;display:inline-grid;place-items:center;flex:none;font:inherit;line-height:1;padding:0}
+.twisty svg{width:12px;height:12px;transition:transform .15s}
+.twisty[aria-expanded="true"] svg{transform:rotate(90deg)}
+.count{color:var(--muted);font-size:.8rem;font-weight:500}
+.sub td{background:var(--subsurface);font-size:.93rem}
+.sub .name{padding-left:42px}
+.sub .name::before{content:"";width:10px;height:10px;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-radius:0 0 0 4px;margin-top:-6px;flex:none}
+.sub[hidden]{display:none}
+.bar{height:8px;background:var(--line);border-radius:4px;min-width:90px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.85rem;font-weight:600;white-space:nowrap}
+.done{background:var(--okbg);color:var(--ok)}
+.prog{background:var(--warnbg);color:var(--warn)}
+.risk{background:var(--badbg);color:var(--bad)}
+.idle{background:var(--idlebg);color:var(--idle)}
+
+/* clickable submodule name */
+.sublink{appearance:none;border:none;background:none;padding:0;font:inherit;color:var(--accent);font-weight:600;cursor:pointer;text-align:left;
+  text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;transition:text-decoration-color .15s}
+.sublink:hover{text-decoration-color:currentColor}
+.sublink:focus-visible,.close:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+/* right-side drawer */
+.overlay{position:fixed;inset:0;background:rgba(10,16,22,.5);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s .25s;z-index:20}
+.overlay.open{opacity:1;visibility:visible;transition:opacity .25s}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);color:var(--text);
+  border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.2);z-index:21;display:flex;flex-direction:column;
+  transform:translateX(100%);visibility:hidden;transition:transform .28s ease,visibility 0s .28s;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.drawer.open{transform:none;visibility:visible;transition:transform .28s ease}
+@media (prefers-reduced-motion:reduce){.drawer,.overlay{transition:none!important}}
+.d-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+.d-head h2{margin:0;font-size:1.15rem}
+.crumb{color:var(--muted);font-size:.85rem;margin:0 0 2px}
+.close{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--text);width:34px;height:34px;border-radius:8px;
+  font-size:1.2rem;line-height:1;cursor:pointer;flex:none}
+.d-body{overflow-y:auto;padding:18px 20px 28px;flex:1}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.9rem;margin:0 0 14px}
+.meta b{color:var(--text);font-weight:600}
+.tc-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.tc-sum div{border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center}
+.tc-sum b{display:block;font-size:1.25rem}
+.tc-sum span{font-size:.78rem;color:var(--muted)}
+.tc-title{margin:0 0 8px;font-size:.95rem;color:var(--muted);font-weight:600}
+details.tc{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--subsurface)}
+details.tc summary{list-style:none;cursor:pointer;padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+details.tc summary::-webkit-details-marker{display:none}
+details.tc summary::before{content:"\25B8";color:var(--muted);transition:transform .15s}
+details.tc[open] summary::before{transform:rotate(90deg)}
+.tc-id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;color:var(--muted)}
+.tc-name{flex:1;min-width:140px;font-weight:600;font-size:.93rem}
+.tc-body{padding:2px 14px 14px 30px;font-size:.9rem}
+.tc-body h4{margin:12px 0 4px;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tc-body ol{margin:0;padding-left:20px}
+.tc-body p{margin:0}
+.tc-tags{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--muted);font-size:.82rem;margin-top:12px}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Projects</h1>
+  <div class="tabs" role="tablist" id="tabs"></div>
+</header>
+<main id="panel" role="tabpanel" aria-live="polite"></main>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title" aria-hidden="true">
+  <div class="d-head">
+    <div><p class="crumb" id="d-crumb"></p><h2 id="d-title"></h2></div>
+    <button class="close" id="d-close" aria-label="Close test case details">&times;</button>
+  </div>
+  <div class="d-body" id="d-body"></div>
+</aside>
+
+<script>
+/* Hierarchy: Project > Module > Submodule.
+   Submodule: [name, owner, status, pct, due]
+   Module progress and status are derived from its submodules. */
+const projects = {
+  A: { name: "Project A", desc: "Customer portal redesign", modules: [
+    {n:"Login & Auth", owner:"Priya", due:"2026-08-30", subs:[
+      ["Sign-in form","Priya","Done",100,"2026-08-10"],
+      ["Single sign-on","Kofi","Done",100,"2026-08-20"],
+      ["Password reset","Priya","Done",100,"2026-08-30"]]},
+    {n:"User Profile", owner:"Marcus", due:"2026-10-25", subs:[
+      ["Profile view","Marcus","Done",100,"2026-10-05"],
+      ["Edit profile","Marcus","In progress",70,"2026-10-18"],
+      ["Avatar upload","Jun","In progress",40,"2026-10-25"]]},
+    {n:"Billing Page", owner:"Lena", due:"2026-11-10", subs:[
+      ["Invoice list","Lena","In progress",90,"2026-10-30"],
+      ["Payment methods","Omar","In progress",45,"2026-11-05"],
+      ["Refund requests","Lena","Not started",0,"2026-11-10"]]},
+    {n:"Notifications", owner:"Tom", due:"2026-11-20", subs:[
+      ["Email alerts","Tom","In progress",40,"2026-11-10"],
+      ["In-app inbox","Mei","At risk",20,"2026-11-18"],
+      ["Preferences","Tom","Not started",0,"2026-11-20"]]}]},
+  B: { name: "Project B", desc: "Mobile app v2", modules: [
+    {n:"Onboarding Flow", owner:"Aisha", due:"2026-09-15", subs:[
+      ["Welcome screens","Aisha","Done",100,"2026-09-01"],
+      ["Permission prompts","Leo","Done",100,"2026-09-08"],
+      ["Interactive tutorial","Aisha","Done",100,"2026-09-15"]]},
+    {n:"Offline Sync", owner:"Diego", due:"2026-11-05", subs:[
+      ["Local cache","Diego","In progress",70,"2026-10-25"],
+      ["Conflict resolution","Hana","At risk",20,"2026-11-02"],
+      ["Background sync","Diego","At risk",15,"2026-11-05"]]},
+    {n:"Push Messaging", owner:"Sam", due:"2026-10-31", subs:[
+      ["Device registration","Sam","Done",100,"2026-10-10"],
+      ["Topic subscriptions","Sam","In progress",60,"2026-10-24"],
+      ["Rich notifications","Ravi","In progress",20,"2026-10-31"]]}]},
+  C: { name: "Project C", desc: "Data warehouse migration", modules: [
+    {n:"Schema Mapping", owner:"Chen", due:"2026-07-20", subs:[
+      ["Source inventory","Chen","Done",100,"2026-07-05"],
+      ["Field mapping","Chen","Done",100,"2026-07-14"],
+      ["Mapping sign-off","Rita","Done",100,"2026-07-20"]]},
+    {n:"ETL Pipelines", owner:"Olu", due:"2026-10-28", subs:[
+      ["Extract jobs","Olu","Done",100,"2026-10-10"],
+      ["Transform rules","Olu","In progress",80,"2026-10-22"],
+      ["Load jobs","Yuki","In progress",60,"2026-10-28"]]},
+    {n:"Quality Checks", owner:"Rita", due:"2026-11-12", subs:[
+      ["Row count checks","Rita","Done",100,"2026-10-30"],
+      ["Duplicate detection","Rita","In progress",50,"2026-11-06"],
+      ["Anomaly alerts","Sven","In progress",15,"2026-11-12"]]},
+    {n:"Reporting Layer", owner:"Ivan", due:"2026-12-05", subs:[
+      ["Semantic model","Ivan","In progress",30,"2026-11-20"],
+      ["Dashboards","Ivan","In progress",15,"2026-12-01"],
+      ["Access control","Nadia","Not started",0,"2026-12-05"]]},
+    {n:"Cutover Plan", owner:"Chen", due:"2026-12-15", subs:[
+      ["Runbook","Chen","In progress",20,"2026-12-01"],
+      ["Rollback plan","Chen","At risk",10,"2026-12-08"],
+      ["Dry run","Olu","Not started",0,"2026-12-15"]]}]},
+  D: { name: "Project D", desc: "Internal HR tooling", modules: [
+    {n:"Leave Requests", owner:"Nina", due:"2026-09-01", subs:[
+      ["Request form","Nina","Done",100,"2026-08-20"],
+      ["Approval workflow","Nina","Done",100,"2026-09-01"]]},
+    {n:"Org Chart", owner:"Paul", due:"2026-09-22", subs:[
+      ["Data import","Paul","Done",100,"2026-09-10"],
+      ["Chart view","Paul","Done",100,"2026-09-22"]]},
+    {n:"Performance Reviews", owner:"Zoe", due:"2026-11-30", subs:[
+      ["Self review","Zoe","Done",100,"2026-10-31"],
+      ["Manager review","Zoe","In progress",50,"2026-11-15"],
+      ["Calibration","Abel","Not started",0,"2026-11-30"]]}]}
+};
+
+const cls = {"Done":"done","In progress":"prog","At risk":"risk","Not started":"idle"};
+const tabs = document.getElementById("tabs"), panel = document.getElementById("panel");
+const chevron = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+let current = "A";
+const open = new Set();               // expanded module ids, e.g. "A-0"
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function derive(mod){
+  const s = mod.subs;
+  const pct = Math.round(s.reduce((t,x) => t + x[3], 0) / s.length);
+  const status = s.every(x => x[2] === "Done") ? "Done"
+               : s.some(x => x[2] === "At risk") ? "At risk"
+               : s.every(x => x[2] === "Not started") ? "Not started" : "In progress";
+  return {pct, status};
+}
+const bar = pct => `<div class="bar" title="${pct}%"><i style="width:${pct}%"></i></div>`;
+const badge = st => `<span class="badge ${cls[st]}">${st}</span>`;
+
+function show(key){
+  current = key;
+  [...tabs.children].forEach(b => b.setAttribute("aria-selected", b.dataset.key === key));
+  const p = projects[key];
+  const info = p.modules.map(m => ({m, ...derive(m)}));
+  const subCount = p.modules.reduce((t,m) => t + m.subs.length, 0);
+  const done = info.filter(x => x.status === "Done").length;
+  const avg = Math.round(info.reduce((s,x) => s + x.pct, 0) / info.length);
+
+  const rows = info.map((x, i) => {
+    const id = key + "-" + i, isOpen = open.has(id);
+    const head = `<tr class="mod">
+      <td><div class="name">
+        <button class="twisty" aria-expanded="${isOpen}" aria-controls="sub-${id}" data-id="${id}"
+          aria-label="${isOpen ? "Collapse" : "Expand"} ${esc(x.m.n)} submodules">${chevron}</button>
+        <span>${esc(x.m.n)} <span class="count">(${x.m.subs.length})</span></span></div></td>
+      <td>${esc(x.m.owner)}</td><td>${badge(x.status)}</td><td>${bar(x.pct)}</td><td>${x.m.due}</td></tr>`;
+    const subs = x.m.subs.map((s, j) => `<tr class="sub sub-${id}" ${isOpen ? "" : "hidden"}>
+      <td><div class="name"><button class="sublink" data-mi="${i}" data-si="${j}"
+        aria-haspopup="dialog" title="View test cases">${esc(s[0])}</button></div></td><td>${esc(s[1])}</td>
+      <td>${badge(s[2])}</td><td>${bar(s[3])}</td><td>${s[4]}</td></tr>`).join("");
+    return head + subs;
+  }).join("");
+
+  panel.innerHTML = `
+    <h2 style="margin:0 0 4px">${esc(p.name)}</h2>
+    <p class="proj-desc">${esc(p.desc)}</p>
+    <div class="summary">
+      <div class="stat"><b>${info.length}</b><span>Modules</span></div>
+      <div class="stat"><b>${subCount}</b><span>Submodules</span></div>
+      <div class="stat"><b>${done}</b><span>Modules completed</span></div>
+      <div class="stat"><b>${avg}%</b><span>Overall progress</span></div>
+    </div>
+    <div class="toolbar">
+      <button class="link" data-act="expand">Expand all</button>
+      <button class="link" data-act="collapse">Collapse all</button>
+    </div>
+    <div class="table"><table>
+      <thead><tr><th>Module / Submodule</th><th>Owner</th><th>Status</th><th>Progress</th><th>Due</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+/* ---------- Dummy test case data (generated deterministically per submodule) ---------- */
+const hash = s => [...s].reduce((h,c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+const pick = (arr, seed) => arr[seed % arr.length];
+const CASES = [
+  ["Happy path works end to end", "Functional", "High",
+    ["Open the feature as a signed-in user","Enter valid data and submit","Check the confirmation state"],
+    "The action completes and the user sees a success confirmation."],
+  ["Rejects invalid input", "Functional", "High",
+    ["Open the feature","Enter malformed or empty values","Submit the form"],
+    "Clear inline errors are shown and nothing is saved."],
+  ["Respects user permissions", "Security", "High",
+    ["Sign in with a read-only role","Attempt to use the feature","Check the response"],
+    "Access is denied with a 403 and no data is changed."],
+  ["Works on mobile viewport", "UI", "Medium",
+    ["Resize the browser to 375px wide","Walk through the main flow","Check layout and tap targets"],
+    "Layout stays usable with no horizontal scroll or clipped controls."],
+  ["Handles slow or failed network", "Resilience", "Medium",
+    ["Throttle the network to 3G","Trigger the action","Simulate a timeout"],
+    "A loading state appears, then a retry message on failure."],
+  ["Meets performance target", "Performance", "Low",
+    ["Seed 1,000 records","Open the feature","Measure time to interactive"],
+    "Page becomes interactive in under 2 seconds."],
+  ["Keyboard and screen reader access", "Accessibility", "Medium",
+    ["Navigate using Tab only","Activate each control with Enter/Space","Listen with a screen reader"],
+    "All controls are reachable and announced with sensible labels."]
+];
+const TESTERS = ["Alex","Bianca","Chidi","Dana","Ethan","Farah"];
+const DEFECTS = [
+  "Error banner not shown; request silently fails.",
+  "Value resets to default after refresh.",
+  "Control overlaps adjacent field at narrow widths.",
+  "Response takes 4.8s, above the 2s target."
+];
+
+function buildTests(key, mi, si){
+  const s = projects[key].modules[mi].subs[si];
+  const [name,, status, pct] = s;
+  const seed = hash(key + mi + name);
+  const total = 4 + seed % 3;                       // 4-6 cases
+  const passedN = status === "Done" ? total : Math.round(total * pct / 100);
+  return Array.from({length: total}, (_, k) => {
+    const c = CASES[(seed + k) % CASES.length];
+    let st;
+    if (status === "Done") st = "Passed";
+    else if (status === "Not started") st = "Not run";
+    else if (k < passedN) st = "Passed";
+    else if (status === "At risk") st = k % 2 ? "Blocked" : "Failed";
+    else st = k === passedN && seed % 2 ? "Failed" : "Not run";
+    const day = 1 + (seed + k * 3) % 17;
+    return {
+      id: `TC-${100 + (seed % 800) + k}`, title: `${name}: ${c[0]}`, type: c[1], priority: c[2],
+      steps: c[3], expected: c[4], status: st, tester: pick(TESTERS, seed + k),
+      run: st === "Not run" ? "Never" : `2026-10-${String(day).padStart(2,"0")}`,
+      actual: st === "Passed" ? c[4]
+            : st === "Failed" ? pick(DEFECTS, seed + k) + ` (BUG-${2000 + (seed + k) % 900})`
+            : st === "Blocked" ? "Blocked by an unfinished dependency in the build."
+            : "Not executed yet."
+    };
+  });
+}
+const tcCls = {"Passed":"done","Failed":"risk","Blocked":"prog","Not run":"idle"};
+
+const drawer = document.getElementById("drawer"), overlay = document.getElementById("overlay");
+const dBody = document.getElementById("d-body"), dClose = document.getElementById("d-close");
+let lastFocus = null;
+
+function openDrawer(key, mi, si, trigger){
+  const p = projects[key], m = p.modules[mi], s = m.subs[si];
+  const tests = buildTests(key, mi, si);
+  const n = st => tests.filter(t => t.status === st).length;
+  document.getElementById("d-crumb").textContent = `${p.name} \u203A ${m.n}`;
+  document.getElementById("d-title").textContent = s[0];
+  dBody.innerHTML = `
+    <p class="meta"><span>Owner: <b>${esc(s[1])}</b></span><span>Due: <b>${s[4]}</b></span><span>${badge(s[2])}</span></p>
+    <div class="tc-sum">
+      <div><b>${n("Passed")}</b><span>Passed</span></div>
+      <div><b>${n("Failed")}</b><span>Failed</span></div>
+      <div><b>${n("Blocked")}</b><span>Blocked</span></div>
+      <div><b>${n("Not run")}</b><span>Not run</span></div>
+    </div>
+    <h3 class="tc-title">Test cases (${tests.length})</h3>
+    ${tests.map(t => `<details class="tc">
+      <summary><span class="tc-id">${t.id}</span><span class="tc-name">${esc(t.title)}</span>
+        <span class="badge ${tcCls[t.status]}">${t.status}</span></summary>
+      <div class="tc-body">
+        <h4>Steps</h4><ol>${t.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+        <h4>Expected result</h4><p>${esc(t.expected)}</p>
+        <h4>Actual result</h4><p>${esc(t.actual)}</p>
+        <div class="tc-tags"><span>Type: ${t.type}</span><span>Priority: ${t.priority}</span>
+          <span>Tester: ${t.tester}</span><span>Last run: ${t.run}</span></div>
+      </div></details>`).join("")}`;
+  lastFocus = trigger;
+  drawer.classList.add("open"); overlay.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  dBody.scrollTop = 0;
+  dClose.focus({preventScroll:true});
+}
+function closeDrawer(){
+  if (!drawer.classList.contains("open")) return;
+  drawer.classList.remove("open"); overlay.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus({preventScroll:true});
+}
+dClose.onclick = closeDrawer;
+overlay.onclick = closeDrawer;
+document.addEventListener("keydown", e => {
+  if (!drawer.classList.contains("open")) return;
+  if (e.key === "Escape") closeDrawer();
+  if (e.key === "Tab"){                              // keep focus inside the drawer
+    const f = [...drawer.querySelectorAll("button,summary,[href]")].filter(x => x.offsetParent !== null);
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+});
+
+panel.addEventListener("click", e => {
+  const sl = e.target.closest(".sublink");
+  if (sl){ openDrawer(current, +sl.dataset.mi, +sl.dataset.si, sl); return; }
+  const t = e.target.closest(".twisty");
+  if (t){
+    const id = t.dataset.id, willOpen = !open.has(id);
+    willOpen ? open.add(id) : open.delete(id);
+    t.setAttribute("aria-expanded", willOpen);
+    t.setAttribute("aria-label", t.getAttribute("aria-label").replace(/^\w+/, willOpen ? "Collapse" : "Expand"));
+    panel.querySelectorAll(".sub-" + id).forEach(r => r.hidden = !willOpen);
+    return;
+  }
+  const a = e.target.closest("[data-act]");
+  if (a){
+    projects[current].modules.forEach((_, i) => {
+      const id = current + "-" + i;
+      a.dataset.act === "expand" ? open.add(id) : open.delete(id);
+    });
+    show(current);
+  }
+});
+
+Object.keys(projects).forEach(k => {
+  const b = document.createElement("button");
+  b.className = "tab"; b.role = "tab"; b.dataset.key = k;
+  b.textContent = projects[k].name;
+  b.onclick = () => { closeDrawer(); show(k); };
+  tabs.appendChild(b);
+});
+show("A");
+</script>
+</body>
+</html>
