@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Projects Dashboard</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5f7; --surface:#ffffff; --text:#1c2733; --muted:#5d6b7a; --line:#d9e0e6;
+  --accent:#1f6f8b; --accent-text:#ffffff;
+  --ok:#1d7a46; --okbg:#e0f3e8; --warn:#9a6200; --warnbg:#fbefd5; --bad:#a63232; --badbg:#f9e0e0;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12181e; --surface:#1b242d; --text:#e6ecf1; --muted:#97a6b4; --line:#2e3b47;
+    --accent:#5bb5d3; --accent-text:#0d1a21;
+    --ok:#6fd49a; --okbg:#173a28; --warn:#f0c067; --warnbg:#3d2f10; --bad:#f09a9a; --badbg:#431d1d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12181e; --surface:#1b242d; --text:#e6ecf1; --muted:#97a6b4; --line:#2e3b47;
+  --accent:#5bb5d3; --accent-text:#0d1a21;
+  --ok:#6fd49a; --okbg:#173a28; --warn:#f0c067; --warnbg:#3d2f10; --bad:#f09a9a; --badbg:#431d1d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px clamp(16px,4vw,40px) 0}
+h1{margin:0 0 14px;font-size:1.4rem;font-weight:650}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:0}
+.tab{appearance:none;border:1px solid var(--line);border-bottom:none;background:var(--surface);color:var(--muted);
+  padding:10px 20px;border-radius:8px 8px 0 0;font:inherit;font-weight:600;cursor:pointer;margin-bottom:-1px}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.tab:focus-visible,.row:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+main{padding:24px clamp(16px,4vw,40px) 40px;max-width:1000px}
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 18px;min-width:120px}
+.stat b{display:block;font-size:1.5rem}
+.stat span{color:var(--muted);font-size:.9rem}
+.proj-desc{color:var(--muted);margin:0 0 16px}
+.table{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:.9rem}
+tr:last-child td{border-bottom:none}
+.bar{height:8px;background:var(--line);border-radius:4px;min-width:90px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.85rem;font-weight:600}
+.done{background:var(--okbg);color:var(--ok)}
+.prog{background:var(--warnbg);color:var(--warn)}
+.risk{background:var(--badbg);color:var(--bad)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Projects</h1>
+  <div class="tabs" role="tablist" id="tabs"></div>
+</header>
+<main id="panel" role="tabpanel" aria-live="polite"></main>
+
+<script>
+const projects = {
+  A: { name: "Project A", desc: "Customer portal redesign", modules: [
+    {n:"Login & Auth", owner:"Priya", status:"Done", pct:100, due:"2026-08-30"},
+    {n:"User Profile", owner:"Marcus", status:"In progress", pct:70, due:"2026-10-25"},
+    {n:"Billing Page", owner:"Lena", status:"In progress", pct:45, due:"2026-11-10"},
+    {n:"Notifications", owner:"Tom", status:"At risk", pct:20, due:"2026-11-20"}]},
+  B: { name: "Project B", desc: "Mobile app v2", modules: [
+    {n:"Onboarding Flow", owner:"Aisha", status:"Done", pct:100, due:"2026-09-15"},
+    {n:"Offline Sync", owner:"Diego", status:"At risk", pct:35, due:"2026-11-05"},
+    {n:"Push Messaging", owner:"Sam", status:"In progress", pct:60, due:"2026-10-31"}]},
+  C: { name: "Project C", desc: "Data warehouse migration", modules: [
+    {n:"Schema Mapping", owner:"Chen", status:"Done", pct:100, due:"2026-07-20"},
+    {n:"ETL Pipelines", owner:"Olu", status:"In progress", pct:80, due:"2026-10-28"},
+    {n:"Quality Checks", owner:"Rita", status:"In progress", pct:55, due:"2026-11-12"},
+    {n:"Reporting Layer", owner:"Ivan", status:"In progress", pct:15, due:"2026-12-05"},
+    {n:"Cutover Plan", owner:"Chen", status:"At risk", pct:10, due:"2026-12-15"}]},
+  D: { name: "Project D", desc: "Internal HR tooling", modules: [
+    {n:"Leave Requests", owner:"Nina", status:"Done", pct:100, due:"2026-09-01"},
+    {n:"Org Chart", owner:"Paul", status:"Done", pct:100, due:"2026-09-22"},
+    {n:"Performance Reviews", owner:"Zoe", status:"In progress", pct:50, due:"2026-11-30"}]}
+};
+const cls = {"Done":"done","In progress":"prog","At risk":"risk"};
+const tabs = document.getElementById("tabs"), panel = document.getElementById("panel");
+
+function show(key){
+  [...tabs.children].forEach(b => b.setAttribute("aria-selected", b.dataset.key === key));
+  const p = projects[key], m = p.modules;
+  const done = m.filter(x => x.status === "Done").length;
+  const avg = Math.round(m.reduce((s,x) => s + x.pct, 0) / m.length);
+  panel.innerHTML = `
+    <h2 style="margin:0 0 4px">${p.name}</h2>
+    <p class="proj-desc">${p.desc}</p>
+    <div class="summary">
+      <div class="stat"><b>${m.length}</b><span>Modules</span></div>
+      <div class="stat"><b>${done}</b><span>Completed</span></div>
+      <div class="stat"><b>${avg}%</b><span>Overall progress</span></div>
+    </div>
+    <div class="table"><table>
+      <thead><tr><th>Module</th><th>Owner</th><th>Status</th><th>Progress</th><th>Due</th></tr></thead>
+      <tbody>${m.map(x => `<tr>
+        <td>${x.n}</td><td>${x.owner}</td>
+        <td><span class="badge ${cls[x.status]}">${x.status}</span></td>
+        <td><div class="bar" title="${x.pct}%"><i style="width:${x.pct}%"></i></div></td>
+        <td>${x.due}</td></tr>`).join("")}</tbody>
+    </table></div>`;
+}
+
+Object.keys(projects).forEach(k => {
+  const b = document.createElement("button");
+  b.className = "tab"; b.role = "tab"; b.dataset.key = k;
+  b.textContent = projects[k].name;
+  b.onclick = () => show(k);
+  tabs.appendChild(b);
+});
+show("A");
+</script>
+</body>
+</html>
